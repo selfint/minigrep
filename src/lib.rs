@@ -1,9 +1,11 @@
+use std::env;
 use std::error::Error;
 use std::fs;
 
 pub struct Config {
     pub query: String,
     pub filename: String,
+    pub case_sensitive: bool,
 }
 
 impl Config {
@@ -13,17 +15,44 @@ impl Config {
                 "Wrong amount of arguments, expected 2 (usage: minigrep <query> <filename>)",
             );
         }
+
         let query = args[1].clone();
         let filename = args[2].clone();
 
-        Ok(Config { query, filename })
+        // get case_sensitive from env vars and cli args, with cli args taking precedence
+        let mut case_sensitive = env::var("CASE_INSENSITIVE").is_err();
+        if let Some(case_sensitive_cli_var) = args.get(3) {
+            case_sensitive = match case_sensitive_cli_var.parse() {
+                Ok(val) => val,
+                Err(_) => {
+                    println!("{}", case_sensitive_cli_var);
+                    return Err("Failed to parse case sensitive cli arg");
+                }
+            };
+        }
+
+        Ok(Config {
+            query,
+            filename,
+            case_sensitive,
+        })
     }
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = fs::read_to_string(config.filename)?;
+    let search_function = match config.case_sensitive {
+        true => {
+            println!("search");
+            search
+        }
+        false => {
+            println!("case insensitive search");
+            search_case_insensitive
+        }
+    };
 
-    for line in search(&config.query, &contents) {
+    for line in search_function(&config.query, &contents) {
         println!("{}", line);
     }
 
@@ -76,7 +105,7 @@ mod tests {
             String::from("test"),
             String::from("very"),
             String::from("nice"),
-            String::from("great"),
+            String::from("true"),
         ])
         .unwrap();
     }
