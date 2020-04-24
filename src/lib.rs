@@ -16,18 +16,16 @@ impl Config {
             );
         }
 
-        let query = args[1].clone();
-        let filename = args[2].clone();
+        let (query, filename) = (args[1].clone(), args[2].clone());
 
         // get case_sensitive from env vars and cli args, with cli args taking precedence
         let mut case_sensitive = env::var("CASE_INSENSITIVE").is_err();
         if let Some(case_sensitive_cli_var) = args.get(3) {
-            case_sensitive = match case_sensitive_cli_var.parse() {
-                Ok(val) => val,
-                Err(_) => {
-                    return Err("Failed to parse case sensitive cli arg");
-                }
-            };
+            if let Ok(case_sensitive_cli_var_parsed) = case_sensitive_cli_var.parse() {
+                case_sensitive = case_sensitive_cli_var_parsed;
+            } else {
+                return Err("Failed to parse CLI argument for 'case_insensitive'");
+            }
         }
 
         Ok(Config {
@@ -39,13 +37,8 @@ impl Config {
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let contents = fs::read_to_string(config.filename)?;
-    let search_function = match config.case_sensitive {
-        true => search,
-        false => search_case_insensitive,
-    };
-
-    for line in search_function(&config.query, &contents) {
+    for line in if config.case_sensitive { search } else { search_case_insensitive }(&config.query, &fs::read_to_string(config.filename)?)
+    {
         println!("{}", line);
     }
 
@@ -85,34 +78,28 @@ mod tests {
         expected = "Wrong amount of arguments, expected 2 (usage: minigrep <query> <filename>)"
     )]
     fn config_check_error() {
-        Config::new(&vec![String::from("test")]).unwrap();
+        Config::new(&[String::from("test")]).unwrap();
     }
 
     #[test]
     fn config_check_success() {
-        Config::new(&vec![
-            String::from("test"),
+        Config::new(&[String::from("test"),
             String::from("very"),
-            String::from("nice"),
-        ])
+            String::from("nice")])
         .unwrap();
 
-        Config::new(&vec![
-            String::from("test"),
+        Config::new(&[String::from("test"),
             String::from("very"),
             String::from("nice"),
-            String::from("true"),
-        ])
+            String::from("true")])
         .unwrap();
     }
 
     #[test]
     fn run_check() {
-        run(Config::new(&vec![
-            String::from("test"),
+        run(Config::new(&[String::from("test"),
             String::from("query"),
-            String::from("poem.txt"),
-        ])
+            String::from("poem.txt")])
         .unwrap())
         .unwrap();
     }
