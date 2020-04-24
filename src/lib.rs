@@ -12,7 +12,7 @@ impl Config {
     pub fn new(args: &[String]) -> Result<Config, &'static str> {
         if args.len() < 3 {
             return Err(
-                "Wrong amount of arguments, expected 2 (usage: minigrep <query> <filename>)",
+                "Wrong amount of arguments, expected 2 at least (usage: minigrep <query> <filename> [case_insensitive])",
             );
         }
 
@@ -76,11 +76,14 @@ pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a st
     matching_lines
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    #[should_panic]
+    #[should_panic(
+        expected = "Wrong amount of arguments, expected 2 (usage: minigrep <query> <filename>)"
+    )]
     fn config_check_error() {
         Config::new(&vec![String::from("test")]).unwrap();
     }
