@@ -25,7 +25,6 @@ impl Config {
             case_sensitive = match case_sensitive_cli_var.parse() {
                 Ok(val) => val,
                 Err(_) => {
-                    println!("{}", case_sensitive_cli_var);
                     return Err("Failed to parse case sensitive cli arg");
                 }
             };
@@ -42,14 +41,8 @@ impl Config {
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = fs::read_to_string(config.filename)?;
     let search_function = match config.case_sensitive {
-        true => {
-            println!("search");
-            search
-        }
-        false => {
-            println!("case insensitive search");
-            search_case_insensitive
-        }
+        true => search,
+        false => search_case_insensitive,
     };
 
     for line in search_function(&config.query, &contents) {
