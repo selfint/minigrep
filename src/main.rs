@@ -10,6 +10,6 @@ fn main() {
     });
 
     if let Err(_) = minigrep::run(config) {
-        process::exit(1);
+        process::exit(2);
     }
 }
